@@ -10,10 +10,14 @@
   "dependencies": {
     "next": "16.0.5",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "lucide-react": "^0.363.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^9.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "autoprefixer": "^10.4.18"
   }
 }
