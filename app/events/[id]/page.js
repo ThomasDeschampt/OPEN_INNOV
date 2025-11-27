@@ -21,8 +21,8 @@ import {
   MoreHorizontal,
   AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '../components/AuthContext';
-import { useToast } from '../components/Toast';
+import { useAuth } from '../../components/AuthContext';
+import { useToast } from '../../components/toast';
 
 export default function EventDetailPage() {
   const { id } = useParams();

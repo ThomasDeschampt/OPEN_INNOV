@@ -18,8 +18,8 @@ import {
   AlertCircle,
   Share2,
 } from 'lucide-react';
-import { useAuth } from '../components/AuthContext';
-import { useToast } from '../components/toast';
+import { useAuth } from '../../components/AuthContext';
+import { useToast } from '../../components/toast';
 
 export default function ForumPostPage() {
   const { id } = useParams();
