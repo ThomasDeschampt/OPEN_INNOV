@@ -78,6 +78,10 @@ export default function PollsPage() {
 
       if (!response.ok) {
         toast.error(data.error);
+        // Si l'utilisateur a déjà voté, rafraîchir les données pour afficher les résultats
+        if (response.status === 409) {
+          await fetchPolls();
+        }
         return;
       }
 

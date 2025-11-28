@@ -33,14 +33,16 @@ export default function ForumPostPage() {
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [liking, setLiking] = useState(false);
+  const [hasLiked, setHasLiked] = useState(false);
 
   useEffect(() => {
     fetchPost();
-  }, [id]);
+  }, [id, user]);
 
   const fetchPost = async () => {
     try {
-      const response = await fetch(`/api/forum/${id}`);
+      const url = user ? `/api/forum/${id}?user_id=${user.id}` : `/api/forum/${id}`;
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.error) {
@@ -51,6 +53,7 @@ export default function ForumPostPage() {
       
       setPost(data.post);
       setComments(data.comments || []);
+      setHasLiked(data.userHasLiked || false);
     } catch (error) {
       console.error('Error fetching post:', error);
       toast.error('Erreur lors du chargement');
@@ -67,9 +70,15 @@ export default function ForumPostPage() {
 
     setLiking(true);
     try {
-      const response = await fetch(`/api/forum/${id}`, { method: 'PATCH' });
+      const response = await fetch(`/api/forum/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      });
       const data = await response.json();
       setPost(prev => ({ ...prev, likes: data.likes }));
+      setHasLiked(data.liked);
+      toast.success(data.liked ? 'Post aimé !' : 'Like retiré');
     } catch (error) {
       toast.error('Erreur lors du like');
     } finally {
@@ -227,10 +236,10 @@ export default function ForumPostPage() {
               onClick={handleLike}
               disabled={liking}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
-                liking ? 'opacity-50' : 'hover:bg-red-50'
+                liking ? 'opacity-50' : hasLiked ? 'bg-red-50' : 'hover:bg-red-50'
               }`}
             >
-              <Heart className={`w-5 h-5 ${post.likes > 0 ? 'text-red-500 fill-red-500' : 'text-slate-400'}`} />
+              <Heart className={`w-5 h-5 ${hasLiked ? 'text-red-500 fill-red-500' : 'text-slate-400'}`} />
               <span className="font-medium text-slate-700">{post.likes || 0}</span>
             </button>
 

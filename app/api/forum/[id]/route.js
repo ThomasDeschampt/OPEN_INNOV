@@ -3,7 +3,9 @@ import { getDb } from '@/lib/db';
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('user_id');
     const db = getDb();
     
     const post = db.prepare(`
@@ -23,6 +25,15 @@ export async function GET(request, { params }) {
       );
     }
 
+    // Check if current user has liked this post
+    let userHasLiked = false;
+    if (userId) {
+      const like = db.prepare(
+        'SELECT id FROM forum_post_likes WHERE user_id = ? AND post_id = ?'
+      ).get(userId, id);
+      userHasLiked = !!like;
+    }
+
     const comments = db.prepare(`
       SELECT 
         c.*,
@@ -34,7 +45,7 @@ export async function GET(request, { params }) {
       ORDER BY c.created_at ASC
     `).all(id);
 
-    return NextResponse.json({ post, comments });
+    return NextResponse.json({ post, comments, userHasLiked });
   } catch (error) {
     console.error('Post detail error:', error);
     return NextResponse.json(
@@ -47,7 +58,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   // Add comment
   try {
-    const { id } = params;
+    const { id } = await params;
     const { user_id, content } = await request.json();
 
     if (!user_id || !content) {
@@ -94,15 +105,50 @@ export async function POST(request, { params }) {
 }
 
 export async function PATCH(request, { params }) {
-  // Like post
+  // Toggle like post
   try {
-    const { id } = params;
-    const db = getDb();
-    
-    db.prepare('UPDATE forum_posts SET likes = likes + 1 WHERE id = ?').run(id);
-    const post = db.prepare('SELECT likes FROM forum_posts WHERE id = ?').get(id);
+    const { id } = await params;
+    const { user_id } = await request.json();
 
-    return NextResponse.json({ likes: post.likes });
+    if (!user_id) {
+      return NextResponse.json(
+        { error: 'Utilisateur requis' },
+        { status: 400 }
+      );
+    }
+
+    const db = getDb();
+
+    // Check if post exists
+    const post = db.prepare('SELECT id FROM forum_posts WHERE id = ?').get(id);
+    if (!post) {
+      return NextResponse.json(
+        { error: 'Post non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user already liked this post
+    const existingLike = db.prepare(
+      'SELECT id FROM forum_post_likes WHERE user_id = ? AND post_id = ?'
+    ).get(user_id, id);
+
+    let liked;
+    if (existingLike) {
+      // Remove like
+      db.prepare('DELETE FROM forum_post_likes WHERE user_id = ? AND post_id = ?').run(user_id, id);
+      db.prepare('UPDATE forum_posts SET likes = likes - 1 WHERE id = ?').run(id);
+      liked = false;
+    } else {
+      // Add like
+      db.prepare('INSERT INTO forum_post_likes (user_id, post_id) VALUES (?, ?)').run(user_id, id);
+      db.prepare('UPDATE forum_posts SET likes = likes + 1 WHERE id = ?').run(id);
+      liked = true;
+    }
+
+    const updatedPost = db.prepare('SELECT likes FROM forum_posts WHERE id = ?').get(id);
+
+    return NextResponse.json({ likes: updatedPost.likes, liked });
   } catch (error) {
     console.error('Like post error:', error);
     return NextResponse.json(

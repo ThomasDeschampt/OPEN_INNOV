@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db';
 
 export async function POST(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { userId } = await request.json();
 
     if (!userId) {
@@ -74,7 +74,7 @@ export async function POST(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 

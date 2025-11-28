@@ -1,70 +1,45 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-export async function POST(request, { params }) {
+// GET - Liste des événements
+export async function GET(request) {
   try {
-    const { id } = params;
-    const { userId } = await request.json();
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Utilisateur non connecté' },
-        { status: 401 }
-      );
-    }
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const upcoming = searchParams.get('upcoming');
 
     const db = getDb();
-
-    // Check if event exists
-    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(id);
-    if (!event) {
-      return NextResponse.json(
-        { error: 'Événement non trouvé' },
-        { status: 404 }
-      );
+    
+    let sql = `
+      SELECT 
+        e.*,
+        u.first_name || ' ' || u.last_name as creator_name,
+        (SELECT COUNT(*) FROM registrations WHERE event_id = e.id) as participants_count
+      FROM events e
+      LEFT JOIN users u ON e.created_by = u.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (category) {
+      sql += ' AND e.category = ?';
+      params.push(category);
     }
-
-    // Check if already registered
-    const existing = db.prepare(
-      'SELECT id FROM registrations WHERE user_id = ? AND event_id = ?'
-    ).get(userId, id);
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'Déjà inscrit à cet événement' },
-        { status: 409 }
-      );
+    
+    if (upcoming === 'true') {
+      const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      sql += ' AND e.date >= ?';
+      params.push(now);
     }
+    
+    sql += ' ORDER BY e.date ASC';
 
-    // Check max participants
-    const count = db.prepare(
-      'SELECT COUNT(*) as count FROM registrations WHERE event_id = ?'
-    ).get(id);
+    const events = db.prepare(sql).all(...params);
 
-    if (event.max_participants && count.count >= event.max_participants) {
-      return NextResponse.json(
-        { error: 'Événement complet' },
-        { status: 400 }
-      );
-    }
-
-    // Create registration
-    db.prepare(
-      'INSERT INTO registrations (user_id, event_id) VALUES (?, ?)'
-    ).run(userId, id);
-
-    // Create notification
-    db.prepare(`
-      INSERT INTO notifications (user_id, type, title, message, link)
-      VALUES (?, 'event', 'Inscription confirmée', ?, ?)
-    `).run(userId, `Vous êtes inscrit à "${event.title}"`, `/events/${id}`);
-
-    return NextResponse.json({ 
-      message: 'Inscription réussie',
-      participants_count: count.count + 1
-    });
+    return NextResponse.json({ events });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Events list error:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -72,11 +47,11 @@ export async function POST(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+// POST - Créer un événement
+export async function POST(request) {
   try {
-    const { id } = params;
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const data = await request.json();
+    const { title, description, date, end_date, location, category, max_participants, userId } = data;
 
     if (!userId) {
       return NextResponse.json(
@@ -85,29 +60,25 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    const db = getDb();
-
-    const result = db.prepare(
-      'DELETE FROM registrations WHERE user_id = ? AND event_id = ?'
-    ).run(userId, id);
-
-    if (result.changes === 0) {
+    if (!title || !date) {
       return NextResponse.json(
-        { error: 'Inscription non trouvée' },
-        { status: 404 }
+        { error: 'Titre et date requis' },
+        { status: 400 }
       );
     }
 
-    const count = db.prepare(
-      'SELECT COUNT(*) as count FROM registrations WHERE event_id = ?'
-    ).get(id);
+    const db = getDb();
 
-    return NextResponse.json({ 
-      message: 'Désinscription réussie',
-      participants_count: count.count
-    });
+    const result = db.prepare(`
+      INSERT INTO events (title, description, date, end_date, location, category, max_participants, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(title, description, date, end_date, location, category, max_participants, userId);
+
+    const event = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
+
+    return NextResponse.json({ event, message: 'Événement créé avec succès' }, { status: 201 });
   } catch (error) {
-    console.error('Unregistration error:', error);
+    console.error('Event creation error:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }

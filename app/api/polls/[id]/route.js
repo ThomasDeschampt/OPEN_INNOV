@@ -3,7 +3,7 @@ import { getDb } from '@/lib/db';
 
 export async function POST(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = (await params);
     const { userId, optionId } = await request.json();
 
     if (!userId || !optionId) {
@@ -19,7 +19,7 @@ export async function POST(request, { params }) {
     const poll = db.prepare(`
       SELECT * FROM polls 
       WHERE id = ? AND is_active = 1 
-      AND (expires_at IS NULL OR expires_at > datetime("now"))
+      AND (expires_at IS NULL OR expires_at > datetime('now'))
     `).get(id);
 
     if (!poll) {
@@ -55,7 +55,7 @@ export async function POST(request, { params }) {
 
     // Record vote
     db.prepare(
-      'INSERT INTO poll_votes (poll_id, option_id, user_id) VALUES (?, ?, ?)'
+      "INSERT INTO poll_votes (poll_id, option_id, user_id, created_at) VALUES (?, ?, ?, datetime('now'))"
     ).run(id, optionId, userId);
 
     // Increment vote count
@@ -89,7 +89,7 @@ export async function POST(request, { params }) {
 
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = (await params);
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 

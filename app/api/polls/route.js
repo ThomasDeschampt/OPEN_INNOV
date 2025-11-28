@@ -19,7 +19,7 @@ export async function GET(request) {
     `;
     
     if (active) {
-      query += ' AND p.is_active = 1 AND (p.expires_at IS NULL OR p.expires_at > datetime("now"))';
+      query += ` AND p.is_active = 1 AND (p.expires_at IS NULL OR p.expires_at > datetime('now'))`;
     }
 
     query += ' ORDER BY p.created_at DESC LIMIT ?';
