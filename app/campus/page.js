@@ -22,7 +22,6 @@ import {
 export default function CampusPage() {
   const [locations, setLocations] = useState([]);
   const [resources, setResources] = useState([]);
-  const [selectedFloor, setSelectedFloor] = useState(0);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [activeTab, setActiveTab] = useState('map');
 
@@ -38,16 +37,10 @@ export default function CampusPage() {
       .catch(() => {});
   }, []);
 
-  const floors = [
-    { id: 0, label: 'RDC', name: 'Rez-de-chaussée' },
-    { id: 1, label: '1er', name: '1er étage' },
-    { id: 2, label: '2ème', name: '2ème étage' },
-  ];
-
   const locationTypes = {
     classroom: { icon: Building, color: 'bg-blue-500', label: 'Salle de cours' },
     office: { icon: Users, color: 'bg-purple-500', label: 'Bureau' },
-    cafeteria: { icon: Coffee, color: 'bg-orange-500', label: 'Cafétéria' },
+    cafeteria: { icon: Coffee, color: 'bg-orange-500', label: 'Espace commun' },
     library: { icon: Book, color: 'bg-emerald-500', label: 'Bibliothèque' },
     lab: { icon: FlaskConical, color: 'bg-cyan-500', label: 'Laboratoire' },
     meeting: { icon: Users, color: 'bg-pink-500', label: 'Salle de réunion' },
@@ -63,7 +56,84 @@ export default function CampusPage() {
     sante: { icon: Heart, color: 'bg-pink-500', label: 'Santé' },
   };
 
-  const filteredLocations = locations.filter(loc => loc.floor === selectedFloor);
+  // Plan SVG du 2ème étage basé sur le dessin fourni
+  const FloorPlanSVG = () => (
+    <svg viewBox="0 0 800 500" className="w-full h-full" style={{ minHeight: '400px' }}>
+      {/* Fond */}
+      <rect x="0" y="0" width="800" height="500" fill="#f8fafc" />
+      
+      {/* Titre */}
+      <text x="30" y="35" fontSize="18" fontWeight="bold" fill="#334155">2ème étage</text>
+      
+      {/* === PARTIE HAUTE === */}
+      
+      {/* Couloir horizontal haut */}
+      <rect x="50" y="60" width="700" height="8" fill="#cbd5e1" />
+      
+      {/* Mydil - bloc gauche */}
+      <rect x="50" y="70" width="120" height="120" fill="#e0f2fe" stroke="#0ea5e9" strokeWidth="3" rx="4" />
+      <rect x="50" y="70" width="120" height="50" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeDasharray="5,5" />
+      
+      {/* Espace commun haut - grand bloc central */}
+      <rect x="200" y="70" width="280" height="150" fill="#fef3c7" stroke="#f59e0b" strokeWidth="3" rx="4" />
+      
+      {/* Bloc administration/direction/pédagogie - droite */}
+      <g>
+        {/* Conteneur principal */}
+        <rect x="580" y="70" width="170" height="200" fill="#f3e8ff" stroke="#a855f7" strokeWidth="3" rx="4" />
+        {/* Séparateurs horizontaux */}
+        <line x1="580" y1="130" x2="750" y2="130" stroke="#a855f7" strokeWidth="2" />
+        <line x1="580" y1="190" x2="750" y2="190" stroke="#a855f7" strokeWidth="2" />
+      </g>
+      
+      {/* === PARTIE BASSE === */}
+      
+      {/* Couloir diagonal / espace */}
+      <rect x="50" y="280" width="200" height="8" fill="#cbd5e1" />
+      
+      {/* Espace commun bas */}
+      <rect x="250" y="300" width="280" height="150" fill="#fef3c7" stroke="#f59e0b" strokeWidth="3" rx="4" />
+      {/* Ouverture/porte */}
+      <rect x="530" y="350" width="10" height="50" fill="#f59e0b" />
+      
+      {/* Murs extérieurs stylisés */}
+      <path d="M 50 60 L 50 200 L 170 200 L 170 280 L 50 280 L 50 290" 
+            fill="none" stroke="#64748b" strokeWidth="4" />
+      
+      {/* Labels des zones */}
+      <text x="110" y="140" fontSize="14" fontWeight="600" fill="#0369a1" textAnchor="middle">Mydil</text>
+      
+      <text x="340" y="155" fontSize="14" fontWeight="600" fill="#b45309" textAnchor="middle">Espace commun</text>
+      
+      <text x="665" y="105" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Administration</text>
+      <text x="665" y="165" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Direction</text>
+      <text x="665" y="225" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Pédagogie</text>
+      
+      <text x="390" y="385" fontSize="14" fontWeight="600" fill="#b45309" textAnchor="middle">Espace commun</text>
+      
+      {/* Icônes décoratives */}
+      {/* Tables dans espace commun haut */}
+      <circle cx="280" cy="130" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      <circle cx="340" cy="160" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      <circle cx="400" cy="130" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      
+      {/* Tables dans espace commun bas */}
+      <circle cx="320" cy="360" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      <circle cx="390" cy="390" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      <circle cx="460" cy="360" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
+      
+      {/* Bureaux dans administration */}
+      <rect x="600" y="85" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
+      <rect x="600" y="145" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
+      <rect x="600" y="205" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
+      
+      {/* Postes dans Mydil */}
+      <rect x="70" y="100" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+      <rect x="70" y="130" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+      <rect x="120" y="100" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+      <rect x="120" y="130" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
+    </svg>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -113,85 +183,36 @@ export default function CampusPage() {
             {/* Map */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-                {/* Floor Selector */}
+                {/* Header */}
                 <div className="p-4 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Layers className="w-5 h-5 text-slate-400" />
-                    <span className="font-medium text-slate-700">Étage</span>
+                    <span className="font-medium text-slate-700">Plan du 2ème étage</span>
                   </div>
-                  <div className="flex gap-2">
-                    {floors.map(floor => (
-                      <button
-                        key={floor.id}
-                        onClick={() => setSelectedFloor(floor.id)}
-                        className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                          selectedFloor === floor.id
-                            ? 'bg-epsi-blue text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {floor.label}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="text-sm text-slate-500">EPSI Campus</span>
                 </div>
 
-                {/* Interactive Map */}
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 to-slate-200 p-8">
-                  {/* Grid Background */}
-                  <div className="absolute inset-0 opacity-20">
-                    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#94a3b8" strokeWidth="0.5"/>
-                        </pattern>
-                      </defs>
-                      <rect width="100%" height="100%" fill="url(#grid)" />
-                    </svg>
-                  </div>
-
-                  {/* Building Outline */}
-                  <div className="absolute inset-8 border-2 border-dashed border-slate-300 rounded-2xl flex items-center justify-center">
-                    <span className="text-slate-400 text-sm">
-                      {floors.find(f => f.id === selectedFloor)?.name}
-                    </span>
-                  </div>
-
-                  {/* Location Points */}
-                  {filteredLocations.map(location => {
-                    const typeInfo = locationTypes[location.type] || locationTypes.other;
-                    const Icon = typeInfo.icon;
-                    
-                    return (
-                      <button
-                        key={location.id}
-                        onClick={() => setSelectedLocation(location)}
-                        className={`map-point ${typeInfo.color} flex items-center justify-center text-white shadow-lg`}
-                        style={{
-                          left: `${location.x_position * 100}%`,
-                          top: `${location.y_position * 100}%`,
-                          transform: 'translate(-50%, -50%)',
-                        }}
-                        title={location.name}
-                      >
-                        <Icon className="w-4 h-4" />
-                      </button>
-                    );
-                  })}
+                {/* SVG Floor Plan */}
+                <div className="p-4 bg-slate-50">
+                  <FloorPlanSVG />
                 </div>
 
                 {/* Legend */}
                 <div className="p-4 border-t border-slate-100">
                   <p className="text-xs font-medium text-slate-500 mb-3">Légende</p>
-                  <div className="flex flex-wrap gap-3">
-                    {Object.entries(locationTypes).map(([key, { icon: Icon, color, label }]) => (
-                      <div key={key} className="flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center`}>
-                          <Icon className="w-3 h-3 text-white" />
-                        </div>
-                        <span className="text-xs text-slate-600">{label}</span>
-                      </div>
-                    ))}
+                  <div className="flex flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-cyan-100 border-2 border-cyan-500"></div>
+                      <span className="text-xs text-slate-600">Mydil (Lab)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-amber-100 border-2 border-amber-500"></div>
+                      <span className="text-xs text-slate-600">Espace commun</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded bg-purple-100 border-2 border-purple-500"></div>
+                      <span className="text-xs text-slate-600">Bureaux</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -199,45 +220,36 @@ export default function CampusPage() {
 
             {/* Sidebar - Location List */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900">
-                Emplacements - {floors.find(f => f.id === selectedFloor)?.name}
-              </h3>
+              <h3 className="font-semibold text-slate-900">Espaces du 2ème étage</h3>
               
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                {filteredLocations.length > 0 ? (
-                  filteredLocations.map(location => {
-                    const typeInfo = locationTypes[location.type] || locationTypes.other;
-                    const Icon = typeInfo.icon;
-                    
-                    return (
-                      <button
-                        key={location.id}
-                        onClick={() => setSelectedLocation(location)}
-                        className={`w-full p-4 rounded-xl text-left transition-all ${
-                          selectedLocation?.id === location.id
-                            ? 'bg-epsi-light border-2 border-epsi-blue'
-                            : 'bg-white hover:bg-slate-50 border-2 border-transparent'
-                        } shadow-sm`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-lg ${typeInfo.color} flex items-center justify-center`}>
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-900 truncate">{location.name}</p>
-                            <p className="text-xs text-slate-500">{typeInfo.label}</p>
-                          </div>
-                          <ChevronRight className="w-5 h-5 text-slate-300" />
+              <div className="space-y-2">
+                {locations.map(location => {
+                  const typeInfo = locationTypes[location.type] || locationTypes.other;
+                  const Icon = typeInfo.icon;
+                  
+                  return (
+                    <button
+                      key={location.id}
+                      onClick={() => setSelectedLocation(location)}
+                      className={`w-full p-4 rounded-xl text-left transition-all ${
+                        selectedLocation?.id === location.id
+                          ? 'bg-epsi-light border-2 border-epsi-blue'
+                          : 'bg-white hover:bg-slate-50 border-2 border-transparent'
+                      } shadow-sm`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg ${typeInfo.color} flex items-center justify-center`}>
+                          <Icon className="w-5 h-5 text-white" />
                         </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="bg-white rounded-xl p-8 text-center">
-                    <MapPin className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500">Aucun emplacement à cet étage</p>
-                  </div>
-                )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-slate-900">{location.name}</p>
+                          <p className="text-xs text-slate-500">{typeInfo.label}</p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-slate-300" />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -318,7 +330,7 @@ export default function CampusPage() {
                 <div>
                   <h3 className="font-semibold text-slate-900">{selectedLocation.name}</h3>
                   <p className="text-sm text-slate-500">
-                    {locationTypes[selectedLocation.type]?.label} • {floors.find(f => f.id === selectedLocation.floor)?.name}
+                    {locationTypes[selectedLocation.type]?.label} • 2ème étage
                   </p>
                 </div>
               </div>
@@ -336,7 +348,7 @@ export default function CampusPage() {
             
             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-lg p-3">
               <Info className="w-4 h-4" />
-              <span>Cliquez sur la carte pour localiser</span>
+              <span>Visible sur le plan ci-dessus</span>
             </div>
           </div>
         </div>
