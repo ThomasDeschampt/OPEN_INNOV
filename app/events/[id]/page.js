@@ -88,6 +88,7 @@ export default function EventDetailPage() {
       toast.success('Inscription confirmée !');
       setIsRegistered(true);
       setEvent(prev => ({ ...prev, participants_count: data.participants_count }));
+      window.dispatchEvent(new Event('notifications-updated'));
       fetchEvent(); // Refresh participants list
     } catch (error) {
       toast.error('Erreur lors de l\'inscription');

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from './components/AuthContext';
 import {
   Calendar,
@@ -17,7 +18,142 @@ import {
   ChevronRight,
   Clock,
   UserCheck,
+  Target,
+  Flame,
+  Gift,
 } from 'lucide-react';
+
+const BADGES = [
+  {
+    id: 'starter',
+    title: 'Starter EPSI',
+    image: '/icon/image-removebg-preview.png',
+    minPoints: 10,
+  },
+  {
+    id: 'explorer',
+    title: 'Explorateur',
+    image: '/icon/image-removebg-preview%20(1).png',
+    minPoints: 35,
+  },
+  {
+    id: 'community',
+    title: 'Ambassadeur',
+    image: '/icon/image-removebg-preview%20(2).png',
+    minPoints: 80,
+  },
+  {
+    id: 'streak',
+    title: 'Flamme continue',
+    image: '/icon/image-removebg-preview%20(3).png',
+    minStreak: 3,
+  },
+  {
+    id: 'legend',
+    title: 'Légende du campus',
+    image: '/icon/image-removebg-preview%20(4).png',
+    minPoints: 150,
+  },
+];
+
+const BASE_GAME_PROGRESS = {
+  streak: 0,
+  points: 0,
+  lastCompletedDate: null,
+  lastReward: 0,
+  lastAttempts: null,
+};
+
+const CODE_LENGTH = 6;
+
+function getLocalDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function getDailySeed(date = new Date()) {
+  const yearStart = new Date(date.getFullYear(), 0, 0);
+  const dayNumber = Math.floor((date - yearStart) / 86400000);
+  return dayNumber;
+}
+
+function buildDailyLogicCode(date = new Date()) {
+  const seed = getDailySeed(date);
+  const digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+  for (let index = digits.length - 1; index > 0; index -= 1) {
+    const swapIndex = (seed * (index + 3) + 17) % (index + 1);
+    [digits[index], digits[swapIndex]] = [digits[swapIndex], digits[index]];
+  }
+
+  return digits.slice(0, CODE_LENGTH);
+}
+
+function evaluateCodeGuess(secretCode, guessCode) {
+  const statuses = guessCode.map((digit, index) => {
+    if (digit === secretCode[index]) {
+      return 'exact';
+    }
+
+    if (secretCode.includes(digit)) {
+      return 'misplaced';
+    }
+
+    return 'absent';
+  });
+
+  const exact = guessCode.reduce(
+    (count, digit, index) => (digit === secretCode[index] ? count + 1 : count),
+    0,
+  );
+
+  const shared = guessCode.reduce(
+    (count, digit) => (secretCode.includes(digit) ? count + 1 : count),
+    0,
+  );
+
+  return {
+    exact,
+    misplaced: shared - exact,
+    statuses,
+  };
+}
+
+function getUserQuestStorageKey(user) {
+  if (user?.id) {
+    return `epsi_quest_progress_user_${user.id}`;
+  }
+
+  if (user?.email) {
+    return `epsi_quest_progress_user_${encodeURIComponent(user.email)}`;
+  }
+
+  return 'epsi_quest_progress_guest';
+}
+
+function normalizeProgress(progress) {
+  const normalized = {
+    ...BASE_GAME_PROGRESS,
+    ...(progress && typeof progress === 'object' ? progress : {}),
+  };
+
+  return normalized;
+}
+
+function isValidGuess(input) {
+  if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(input)) {
+    return false;
+  }
+
+  const uniqueDigits = new Set(input.split(''));
+  return uniqueDigits.size === CODE_LENGTH;
+}
+
+function formatCode(code) {
+  return code.join(' ');
+}
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -25,6 +161,27 @@ export default function HomePage() {
   const [upcomingEvents, setUpcomingEvents] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
   const [activePolls, setActivePolls] = useState([]);
+  const [gameProgress, setGameProgress] = useState(BASE_GAME_PROGRESS);
+  const [gameNotice, setGameNotice] = useState('');
+  const [logicCode, setLogicCode] = useState([]);
+  const [guessInput, setGuessInput] = useState('');
+  const [attempts, setAttempts] = useState([]);
+  const [logicSolved, setLogicSolved] = useState(false);
+
+  const todayKey = getLocalDateKey();
+  const userProgressStorageKey = getUserQuestStorageKey(user);
+  const gameCompletedToday = gameProgress.lastCompletedDate === todayKey;
+  const dailyLogicCode = useMemo(() => buildDailyLogicCode(new Date()), [todayKey]);
+  const maxAttempts = 6;
+  const guessesRemaining = Math.max(0, maxAttempts - attempts.length);
+  const hiddenCodeDisplay = '? '.repeat(CODE_LENGTH).trim();
+
+  const questTier = gameProgress.points >= 150 ? 'Légende du campus' : gameProgress.points >= 80 ? 'Ambassadeur' : gameProgress.points >= 30 ? 'Explorateur' : 'Nouvel arrivant';
+  const unlockedBadges = BADGES.filter(badge => {
+    const hasPoints = typeof badge.minPoints === 'number' ? gameProgress.points >= badge.minPoints : true;
+    const hasStreak = typeof badge.minStreak === 'number' ? gameProgress.streak >= badge.minStreak : true;
+    return hasPoints && hasStreak;
+  });
 
   useEffect(() => {
     // Fetch stats
@@ -51,6 +208,135 @@ export default function HomePage() {
       .then(data => setActivePolls(data.polls || []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const savedProgress = localStorage.getItem(userProgressStorageKey);
+
+      if (savedProgress) {
+        setGameProgress(normalizeProgress(JSON.parse(savedProgress)));
+        return;
+      }
+
+      const legacyProgress = localStorage.getItem('epsi_quest_progress');
+      if (legacyProgress) {
+        const normalizedProgress = normalizeProgress(JSON.parse(legacyProgress));
+        setGameProgress(normalizedProgress);
+        localStorage.setItem(userProgressStorageKey, JSON.stringify(normalizedProgress));
+        localStorage.removeItem('epsi_quest_progress');
+        return;
+      }
+
+      setGameProgress(BASE_GAME_PROGRESS);
+    } catch (error) {
+      localStorage.removeItem(userProgressStorageKey);
+      setGameProgress(BASE_GAME_PROGRESS);
+    }
+  }, [userProgressStorageKey]);
+
+  useEffect(() => {
+    setLogicCode(dailyLogicCode);
+    setGuessInput('');
+    setAttempts([]);
+    setLogicSolved(gameCompletedToday);
+    setGameNotice(gameCompletedToday
+      ? 'Défi du jour déjà validé. Un nouveau puzzle sera disponible demain.'
+      : `Trouve le code secret à ${CODE_LENGTH} chiffres (chiffres tous différents).`);
+  }, [dailyLogicCode, gameCompletedToday, todayKey]);
+
+  const rewardDailyGame = (attemptCount) => {
+    if (gameCompletedToday) {
+      return;
+    }
+
+    const efficiencyBonus = Math.max(0, 8 - attemptCount);
+    const dailyReward = 20 + efficiencyBonus;
+    const yesterdayKey = getLocalDateKey(new Date(Date.now() - 86400000));
+    const nextStreak = gameProgress.lastCompletedDate === yesterdayKey ? gameProgress.streak + 1 : 1;
+    const nextProgress = {
+      streak: nextStreak,
+      points: gameProgress.points + dailyReward,
+      lastCompletedDate: todayKey,
+      lastReward: dailyReward,
+      lastAttempts: attemptCount,
+    };
+
+    setGameProgress(nextProgress);
+    setGameNotice(`Code trouvé en ${attemptCount} essai${attemptCount > 1 ? 's' : ''}. +${dailyReward} points.`);
+    localStorage.setItem(userProgressStorageKey, JSON.stringify(nextProgress));
+  };
+
+  const submitGuess = () => {
+    if (gameCompletedToday || logicSolved) {
+      return;
+    }
+
+    const cleanGuess = guessInput.trim();
+    if (!isValidGuess(cleanGuess)) {
+      setGameNotice(`Entre ${CODE_LENGTH} chiffres différents (exemple: 573190).`);
+      return;
+    }
+
+    if (attempts.length >= maxAttempts) {
+      setGameNotice('Tu as utilisé tous tes essais pour aujourd\'hui.');
+      return;
+    }
+
+    const guessDigits = cleanGuess.split('').map(Number);
+    const feedback = evaluateCodeGuess(logicCode, guessDigits);
+    const nextAttempts = [
+      ...attempts,
+      {
+        guess: cleanGuess,
+        exact: feedback.exact,
+        misplaced: feedback.misplaced,
+        statuses: feedback.statuses,
+      },
+    ];
+
+    setAttempts(nextAttempts);
+    setGuessInput('');
+
+    if (feedback.exact === CODE_LENGTH) {
+      setLogicSolved(true);
+      rewardDailyGame(nextAttempts.length);
+      return;
+    }
+
+    if (nextAttempts.length >= maxAttempts) {
+      setLogicSolved(true);
+      setGameNotice('Plus d\'essais disponibles pour aujourd\'hui. Nouveau défi demain.');
+      return;
+    }
+
+    setGameNotice(`Indice: ${feedback.exact} bien placé(s), ${feedback.misplaced} mal placé(s).`);
+  };
+
+  const appendDigit = (digit) => {
+    if (gameCompletedToday || logicSolved) {
+      return;
+    }
+
+    setGuessInput(previous => {
+      if (previous.length >= CODE_LENGTH || previous.includes(String(digit))) {
+        return previous;
+      }
+
+      return `${previous}${digit}`;
+    });
+  };
+
+  const popDigit = () => {
+    if (gameCompletedToday || logicSolved) {
+      return;
+    }
+
+    setGuessInput(previous => previous.slice(0, -1));
+  };
 
   const quickLinks = [
     { href: '/events', icon: Calendar, label: 'Événements', color: 'from-purple-500 to-pink-500', desc: 'Soirées, conférences, sport...' },
@@ -178,6 +464,204 @@ export default function HomePage() {
               <ChevronRight className="absolute bottom-4 right-4 w-5 h-5 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
             </Link>
           ))}
+        </div>
+      </section>
+
+      {/* Badges visibles */}
+      <section className="max-w-7xl mx-auto px-4 py-2">
+        <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-5 md:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-display font-bold text-slate-900">Mes badges</h3>
+            <span className="text-sm text-slate-500">{unlockedBadges.length}/{BADGES.length}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {BADGES.map(badge => {
+              const unlocked = unlockedBadges.some(item => item.id === badge.id);
+
+              return (
+                <div
+                  key={badge.id}
+                  className={`rounded-2xl border p-3 text-center transition-all ${
+                    unlocked ? 'border-emerald-200 bg-emerald-50' : 'border-slate-200 bg-slate-50 opacity-70'
+                  }`}
+                >
+                  <div className="w-14 h-14 mx-auto mb-2 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                    <Image src={badge.image} alt={badge.title} width={42} height={42} className="object-contain" />
+                  </div>
+                  <p className="text-sm font-semibold text-slate-800">{badge.title}</p>
+                  <p className="text-xs text-slate-500 mt-1">{unlocked ? 'Débloqué' : 'Verrouillé'}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Mini-jeu quotidien */}
+      <section className="max-w-7xl mx-auto px-4 py-8">
+        <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white shadow-2xl p-6 md:p-8">
+          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.55),transparent_30%),radial-gradient(circle_at_80%_20%,rgba(168,85,247,0.45),transparent_25%),radial-gradient(circle_at_60%_80%,rgba(16,185,129,0.35),transparent_28%)]" />
+          <div className="relative">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm mb-3">
+                  <Target className="w-4 h-4 text-epsi-accent" />
+                  Mini-jeu du jour
+                </div>
+                <h2 className="text-2xl md:text-3xl font-display font-bold">EPSI LogiCode</h2>
+                <p className="text-white/75 mt-2 max-w-2xl">Trouve le code secret à {CODE_LENGTH} chiffres différents.</p>
+              </div>
+              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/10">
+                <Flame className="w-5 h-5 text-orange-300" />
+                <span className="font-semibold">{gameProgress.streak} jours</span>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-6 items-start">
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4 space-y-3">
+                  <p className="text-sm text-white/70">Essais restants: {guessesRemaining}/{maxAttempts}</p>
+                  <div className="flex gap-2">
+                    <input
+                      value={guessInput}
+                      onChange={(event) => {
+                        const nextValue = event.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH);
+                        setGuessInput(nextValue);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          submitGuess();
+                        }
+                      }}
+                      disabled={gameCompletedToday || logicSolved}
+                      placeholder="Ex: 573190"
+                      className="w-full rounded-xl px-4 py-3 text-lg tracking-[0.22em] text-center font-black bg-slate-950/70 border border-white/20 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={submitGuess}
+                      disabled={gameCompletedToday || logicSolved || attempts.length >= maxAttempts}
+                      className="px-4 py-3 rounded-xl bg-emerald-500 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Tester
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/60">Règle: {CODE_LENGTH} chiffres, tous différents. Vert = bien placé, orange = présent mais mal placé.</p>
+                </div>
+
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-3">Pavé rapide</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(digit => (
+                      <button
+                        key={digit}
+                        type="button"
+                        disabled={gameCompletedToday || logicSolved}
+                        onClick={() => appendDigit(digit)}
+                        className="rounded-lg py-2 bg-white/15 hover:bg-white/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {digit}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={popDigit}
+                      disabled={gameCompletedToday || logicSolved}
+                      className="px-3 py-2 rounded-lg bg-white/15 hover:bg-white/25 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Effacer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={submitGuess}
+                      disabled={gameCompletedToday || logicSolved || attempts.length >= maxAttempts}
+                      className="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Valider l'essai
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-3">Historique des essais</p>
+                  {attempts.length === 0 ? (
+                    <p className="text-sm text-white/60">Aucun essai pour le moment.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {attempts.map((attempt, index) => (
+                        <div key={`${attempt.guess}-${index}`} className="rounded-xl bg-slate-950/40 border border-white/10 p-3 flex items-center justify-between">
+                          <span className="flex flex-wrap gap-1.5">
+                            {attempt.guess.split('').map((digit, digitIndex) => {
+                              const status = attempt.statuses?.[digitIndex];
+                              const statusClass = status === 'exact'
+                                ? 'bg-emerald-500 text-white border-emerald-300'
+                                : status === 'misplaced'
+                                  ? 'bg-amber-400 text-slate-900 border-amber-200'
+                                  : 'bg-slate-800 text-slate-200 border-slate-600';
+
+                              return (
+                                <span
+                                  key={`${attempt.guess}-${digitIndex}`}
+                                  className={`w-8 h-8 rounded-lg border text-sm font-black flex items-center justify-center ${statusClass}`}
+                                >
+                                  {digit}
+                                </span>
+                              );
+                            })}
+                          </span>
+                          <span className="text-sm text-white/80">{attempt.exact} bien placés • {attempt.misplaced} mal placés</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-1">Points cumulés</p>
+                  <p className="text-3xl font-bold">{gameProgress.points}</p>
+                </div>
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-1">Récompense jour</p>
+                  <p className="text-lg font-semibold flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-amber-300" />
+                    +{gameProgress.lastReward || 20} pts
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-1">Niveau</p>
+                  <p className="text-lg font-semibold">{questTier}</p>
+                </div>
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-1">Dernière victoire</p>
+                  <p className="text-lg font-semibold">
+                    {typeof gameProgress.lastAttempts === 'number'
+                      ? `${gameProgress.lastAttempts} essai${gameProgress.lastAttempts > 1 ? 's' : ''}`
+                      : 'Aucune'}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white/10 backdrop-blur-sm p-4">
+                  <p className="text-sm text-white/70 mb-1">Code du jour</p>
+                  <p className="text-lg font-semibold tracking-[0.2em]">
+                    {gameCompletedToday || logicSolved ? formatCode(logicCode) : hiddenCodeDisplay}
+                  </p>
+                </div>
+                {gameNotice && (
+                  <div className="rounded-2xl bg-emerald-500/20 border border-emerald-300/20 p-4 text-emerald-100">
+                    {gameNotice}
+                  </div>
+                )}
+                {logicSolved && (
+                  <div className="rounded-2xl bg-sky-500/20 border border-sky-300/30 p-3 text-sm text-sky-100">
+                    Code trouvé: {formatCode(logicCode)}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

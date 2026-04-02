@@ -43,6 +43,36 @@ export default function ProfilePage() {
     fetchUserData();
   }, [user]);
 
+  useEffect(() => {
+    const unreadNotifications = notifications.some(notification => !notification.is_read);
+
+    if (activeTab !== 'notifications' || !user || !unreadNotifications) {
+      return;
+    }
+
+    const markAllAsRead = async () => {
+      try {
+        const response = await fetch(`/api/notifications?userId=${user.id}`, {
+          method: 'PATCH',
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        setNotifications(previous => previous.map(notification => ({
+          ...notification,
+          is_read: 1,
+        })));
+        window.dispatchEvent(new Event('notifications-updated'));
+      } catch (error) {
+        console.error('Error marking all notifications read:', error);
+      }
+    };
+
+    markAllAsRead();
+  }, [activeTab, notifications, user]);
+
   const fetchUserData = async () => {
     setLoading(true);
     try {
@@ -86,10 +116,15 @@ export default function ProfilePage() {
 
   const markNotificationRead = async (notifId) => {
     try {
-      await fetch(`/api/notifications/${notifId}`, { method: 'PATCH' });
+      await fetch(`/api/notifications/${notifId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
       setNotifications(prev => prev.map(n => 
         n.id === notifId ? { ...n, is_read: 1 } : n
       ));
+      window.dispatchEvent(new Event('notifications-updated'));
     } catch (error) {
       console.error('Error marking notification:', error);
     }
@@ -111,11 +146,12 @@ export default function ProfilePage() {
 
   const typeInfo = userTypeLabels[user.user_type] || userTypeLabels.student;
   const TypeIcon = typeInfo.icon;
+  const unreadNotificationCount = notifications.filter(notification => !notification.is_read).length;
 
   const tabs = [
     { id: 'overview', label: 'Vue d\'ensemble' },
     { id: 'events', label: 'Mes événements' },
-    { id: 'notifications', label: 'Notifications', badge: notifications.filter(n => !n.is_read).length },
+    { id: 'notifications', label: 'Notifications', badge: unreadNotificationCount },
     { id: 'settings', label: 'Paramètres' },
   ];
 
@@ -281,8 +317,8 @@ export default function ProfilePage() {
                         <div className="text-sm text-slate-500">Événements inscrits</div>
                       </div>
                       <div className="text-center p-4 bg-purple-50 rounded-xl">
-                        <div className="text-3xl font-bold text-purple-600">{notifications.length}</div>
-                        <div className="text-sm text-slate-500">Notifications</div>
+                        <div className="text-3xl font-bold text-purple-600">{unreadNotificationCount}</div>
+                        <div className="text-sm text-slate-500">Notifications non lues</div>
                       </div>
                     </div>
                   </div>
@@ -363,7 +399,12 @@ export default function ProfilePage() {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="bg-white rounded-2xl shadow-lg p-6">
-                <h2 className="text-lg font-semibold text-slate-900 mb-6">Notifications</h2>
+                <div className="flex items-center justify-between gap-4 mb-6">
+                  <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
+                  <span className="text-sm text-slate-500">
+                    Ouvertes = marquées comme lues
+                  </span>
+                </div>
                 
                 {notifications.length > 0 ? (
                   <div className="space-y-2">

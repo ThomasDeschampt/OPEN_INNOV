@@ -7,6 +7,17 @@ const path = require('path');
 const dbPath = path.join(__dirname, '..', 'database.sqlite');
 const db = new Database(dbPath);
 
+const campusColumns = db.prepare('PRAGMA table_info(campus_locations)').all();
+const campusColumnNames = new Set(campusColumns.map(column => column.name));
+
+if (!campusColumnNames.has('contact_name')) {
+  db.exec('ALTER TABLE campus_locations ADD COLUMN contact_name TEXT');
+}
+
+if (!campusColumnNames.has('contact_email')) {
+  db.exec('ALTER TABLE campus_locations ADD COLUMN contact_email TEXT');
+}
+
 console.log('🏫 Initialisation des données du campus EPSI...\n');
 
 // Vider les anciennes données
@@ -18,11 +29,11 @@ console.log('✅ Anciennes données supprimées\n');
 // Données des emplacements du campus - uniquement 2ème étage basé sur le plan réel
 const campusLocations = [
   // 2ème étage (floor 2) - basé sur le plan fourni
-  { name: 'Mydil', description: 'Espace Mydil - Innovation et projets étudiants', type: 'lab', floor: 2, x_position: 0.12, y_position: 0.38 },
+  { name: 'Mydil', description: 'Espace Mydil - Innovation et projets étudiants', type: 'lab', floor: 2, x_position: 0.12, y_position: 0.38, contact_name: 'Référent Innovation', contact_email: 'mydil@epsi.fr' },
   { name: 'Espace commun', description: 'Espace de travail collaboratif et détente', type: 'cafeteria', floor: 2, x_position: 0.42, y_position: 0.28 },
-  { name: 'Administration', description: 'Services administratifs - Inscriptions, certificats', type: 'office', floor: 2, x_position: 0.82, y_position: 0.18 },
-  { name: 'Direction', description: 'Bureau de la direction de l\'école', type: 'office', floor: 2, x_position: 0.82, y_position: 0.35 },
-  { name: 'Pédagogie', description: 'Bureau pédagogique - Suivi des étudiants, stages', type: 'office', floor: 2, x_position: 0.82, y_position: 0.52 },
+  { name: 'Administration', description: 'Services administratifs - Inscriptions, certificats', type: 'office', floor: 2, x_position: 0.82, y_position: 0.18, contact_name: 'Nadège', contact_email: 'nadege@epsi.fr' },
+  { name: 'Direction', description: 'Bureau de la direction de l\'école', type: 'office', floor: 2, x_position: 0.82, y_position: 0.35, contact_name: 'Direction', contact_email: 'direction@epsi.fr' },
+  { name: 'Pédagogie', description: 'Bureau pédagogique - Suivi des étudiants, stages', type: 'office', floor: 2, x_position: 0.82, y_position: 0.52, contact_name: 'Service pédagogie', contact_email: 'pedagogie@epsi.fr' },
   { name: 'Espace commun', description: 'Espace de travail et détente', type: 'cafeteria', floor: 2, x_position: 0.42, y_position: 0.78 },
 ];
 
@@ -69,13 +80,22 @@ const resources = [
 console.log('📍 Insertion des emplacements du campus...');
 
 const insertLocation = db.prepare(`
-  INSERT INTO campus_locations (name, description, type, floor, x_position, y_position)
-  VALUES (@name, @description, @type, @floor, @x_position, @y_position)
+  INSERT INTO campus_locations (name, description, type, floor, x_position, y_position, contact_name, contact_email)
+  VALUES (@name, @description, @type, @floor, @x_position, @y_position, @contact_name, @contact_email)
 `);
 
 const insertManyLocations = db.transaction((locations) => {
   for (const location of locations) {
-    insertLocation.run(location);
+    insertLocation.run({
+      name: location.name,
+      description: location.description,
+      type: location.type,
+      floor: location.floor,
+      x_position: location.x_position,
+      y_position: location.y_position,
+      contact_name: location.contact_name || null,
+      contact_email: location.contact_email || null,
+    });
   }
 });
 

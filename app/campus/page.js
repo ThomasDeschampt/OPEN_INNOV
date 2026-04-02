@@ -16,8 +16,25 @@ import {
   ChevronRight,
   Layers,
   Info,
+  Mail,
+  Sparkles,
   X,
 } from 'lucide-react';
+
+const CONTACT_FALLBACKS = {
+  administration: { contact_name: 'Nadège', contact_email: 'nadege@epsi.fr' },
+  direction: { contact_name: 'Direction', contact_email: 'direction@epsi.fr' },
+  pedagogie: { contact_name: 'Service pédagogie', contact_email: 'pedagogie@epsi.fr' },
+  mydil: { contact_name: 'Référent Innovation', contact_email: 'mydil@epsi.fr' },
+};
+
+function normalizeLabel(value = '') {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 export default function CampusPage() {
   const [locations, setLocations] = useState([]);
@@ -56,83 +73,70 @@ export default function CampusPage() {
     sante: { icon: Heart, color: 'bg-pink-500', label: 'Santé' },
   };
 
-  // Plan SVG du 2ème étage basé sur le dessin fourni
-  const FloorPlanSVG = () => (
-    <svg viewBox="0 0 800 500" className="w-full h-full" style={{ minHeight: '400px' }}>
-      {/* Fond */}
-      <rect x="0" y="0" width="800" height="500" fill="#f8fafc" />
-      
-      {/* Titre */}
-      <text x="30" y="35" fontSize="18" fontWeight="bold" fill="#334155">2ème étage</text>
-      
-      {/* === PARTIE HAUTE === */}
-      
-      {/* Couloir horizontal haut */}
-      <rect x="50" y="60" width="700" height="8" fill="#cbd5e1" />
-      
-      {/* Mydil - bloc gauche */}
-      <rect x="50" y="70" width="120" height="120" fill="#e0f2fe" stroke="#0ea5e9" strokeWidth="3" rx="4" />
-      <rect x="50" y="70" width="120" height="50" fill="none" stroke="#0ea5e9" strokeWidth="2" strokeDasharray="5,5" />
-      
-      {/* Espace commun haut - grand bloc central */}
-      <rect x="200" y="70" width="280" height="150" fill="#fef3c7" stroke="#f59e0b" strokeWidth="3" rx="4" />
-      
-      {/* Bloc administration/direction/pédagogie - droite */}
-      <g>
-        {/* Conteneur principal */}
-        <rect x="580" y="70" width="170" height="200" fill="#f3e8ff" stroke="#a855f7" strokeWidth="3" rx="4" />
-        {/* Séparateurs horizontaux */}
-        <line x1="580" y1="130" x2="750" y2="130" stroke="#a855f7" strokeWidth="2" />
-        <line x1="580" y1="190" x2="750" y2="190" stroke="#a855f7" strokeWidth="2" />
-      </g>
-      
-      {/* === PARTIE BASSE === */}
-      
-      {/* Couloir diagonal / espace */}
-      <rect x="50" y="280" width="200" height="8" fill="#cbd5e1" />
-      
-      {/* Espace commun bas */}
-      <rect x="250" y="300" width="280" height="150" fill="#fef3c7" stroke="#f59e0b" strokeWidth="3" rx="4" />
-      {/* Ouverture/porte */}
-      <rect x="530" y="350" width="10" height="50" fill="#f59e0b" />
-      
-      {/* Murs extérieurs stylisés */}
-      <path d="M 50 60 L 50 200 L 170 200 L 170 280 L 50 280 L 50 290" 
-            fill="none" stroke="#64748b" strokeWidth="4" />
-      
-      {/* Labels des zones */}
-      <text x="110" y="140" fontSize="14" fontWeight="600" fill="#0369a1" textAnchor="middle">Mydil</text>
-      
-      <text x="340" y="155" fontSize="14" fontWeight="600" fill="#b45309" textAnchor="middle">Espace commun</text>
-      
-      <text x="665" y="105" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Administration</text>
-      <text x="665" y="165" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Direction</text>
-      <text x="665" y="225" fontSize="12" fontWeight="600" fill="#7c3aed" textAnchor="middle">Pédagogie</text>
-      
-      <text x="390" y="385" fontSize="14" fontWeight="600" fill="#b45309" textAnchor="middle">Espace commun</text>
-      
-      {/* Icônes décoratives */}
-      {/* Tables dans espace commun haut */}
-      <circle cx="280" cy="130" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      <circle cx="340" cy="160" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      <circle cx="400" cy="130" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      
-      {/* Tables dans espace commun bas */}
-      <circle cx="320" cy="360" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      <circle cx="390" cy="390" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      <circle cx="460" cy="360" r="15" fill="#fde68a" stroke="#f59e0b" strokeWidth="1" />
-      
-      {/* Bureaux dans administration */}
-      <rect x="600" y="85" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
-      <rect x="600" y="145" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
-      <rect x="600" y="205" width="40" height="25" fill="#e9d5ff" stroke="#a855f7" strokeWidth="1" rx="2" />
-      
-      {/* Postes dans Mydil */}
-      <rect x="70" y="100" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
-      <rect x="70" y="130" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
-      <rect x="120" y="100" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
-      <rect x="120" y="130" width="30" height="20" fill="#bae6fd" stroke="#0ea5e9" strokeWidth="1" rx="2" />
-    </svg>
+  const getLocationContact = (location) => {
+    if (location.contact_email) {
+      return {
+        contact_name: location.contact_name || 'Contact',
+        contact_email: location.contact_email,
+      };
+    }
+
+    const key = normalizeLabel(location.name);
+    return CONTACT_FALLBACKS[key] || null;
+  };
+
+  const totalContacts = locations.filter(location => getLocationContact(location)).length;
+
+  const FloorPlan = () => (
+    <div className="relative rounded-2xl border border-slate-200 overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 min-h-[460px]">
+      <div className="absolute inset-0 opacity-50 bg-[radial-gradient(circle_at_15%_20%,rgba(37,99,235,0.12),transparent_35%),radial-gradient(circle_at_85%_80%,rgba(124,58,237,0.12),transparent_32%)]" />
+
+      <svg viewBox="0 0 1000 620" className="absolute inset-0 h-full w-full">
+        <rect x="0" y="0" width="1000" height="620" fill="transparent" />
+        <path d="M90 85 H920" stroke="#cbd5e1" strokeWidth="14" strokeLinecap="round" />
+        <path d="M90 360 H550" stroke="#cbd5e1" strokeWidth="14" strokeLinecap="round" />
+        <rect x="70" y="110" width="190" height="190" rx="20" fill="#cffafe" stroke="#0891b2" strokeWidth="4" />
+        <rect x="300" y="110" width="360" height="220" rx="24" fill="#fef3c7" stroke="#f59e0b" strokeWidth="4" />
+        <rect x="700" y="110" width="220" height="290" rx="24" fill="#ede9fe" stroke="#8b5cf6" strokeWidth="4" />
+        <line x1="700" y1="205" x2="920" y2="205" stroke="#8b5cf6" strokeWidth="3" />
+        <line x1="700" y1="300" x2="920" y2="300" stroke="#8b5cf6" strokeWidth="3" />
+        <rect x="350" y="390" width="350" height="190" rx="24" fill="#fef3c7" stroke="#f59e0b" strokeWidth="4" />
+        <text x="95" y="70" fontSize="28" fill="#0f172a" fontWeight="700">Plan 2ème étage</text>
+      </svg>
+
+      <div className="absolute inset-0">
+        {locations.map(location => {
+          const typeInfo = locationTypes[location.type] || locationTypes.other;
+          const Icon = typeInfo.icon;
+          const isActive = selectedLocation?.id === location.id;
+
+          return (
+            <button
+              key={location.id}
+              onClick={() => setSelectedLocation(location)}
+              title={location.name}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 group transition-all ${
+                isActive ? 'z-20 scale-110' : 'z-10 hover:scale-110'
+              }`}
+              style={{
+                left: `${(location.x_position || 0.5) * 100}%`,
+                top: `${(location.y_position || 0.5) * 100}%`,
+              }}
+            >
+              <span className="absolute inset-0 rounded-full animate-ping bg-epsi-blue/35" />
+              <span className={`relative h-11 w-11 rounded-full ${typeInfo.color} text-white flex items-center justify-center border-4 border-white shadow-lg`}>
+                <Icon className="w-5 h-5" />
+              </span>
+              <span className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 rounded-md text-[11px] bg-slate-900 text-white whitespace-nowrap transition-opacity ${
+                isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+              }`}>
+                {location.name}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 
   return (
@@ -179,7 +183,30 @@ export default function CampusPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {activeTab === 'map' ? (
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white rounded-xl p-4 shadow-md border border-slate-100">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Zones</p>
+                <p className="text-2xl font-bold text-slate-900">{locations.length}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow-md border border-slate-100">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Ressources</p>
+                <p className="text-2xl font-bold text-slate-900">{resources.length}</p>
+              </div>
+              <div className="bg-white rounded-xl p-4 shadow-md border border-slate-100">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Contacts</p>
+                <p className="text-2xl font-bold text-slate-900">{totalContacts}</p>
+              </div>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-4 text-white shadow-md">
+                <div className="flex items-center gap-2 text-blue-100 mb-1">
+                  <Sparkles className="w-4 h-4" />
+                  <span className="text-xs uppercase tracking-wide">Astuce</span>
+                </div>
+                <p className="text-sm">Clique sur un point du plan pour voir infos et contact direct.</p>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-8">
             {/* Map */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
@@ -192,9 +219,9 @@ export default function CampusPage() {
                   <span className="text-sm text-slate-500">EPSI Campus</span>
                 </div>
 
-                {/* SVG Floor Plan */}
+                {/* Interactive Floor Plan */}
                 <div className="p-4 bg-slate-50">
-                  <FloorPlanSVG />
+                  <FloorPlan />
                 </div>
 
                 {/* Legend */}
@@ -226,6 +253,7 @@ export default function CampusPage() {
                 {locations.map(location => {
                   const typeInfo = locationTypes[location.type] || locationTypes.other;
                   const Icon = typeInfo.icon;
+                  const locationContact = getLocationContact(location);
                   
                   return (
                     <button
@@ -244,6 +272,9 @@ export default function CampusPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-slate-900">{location.name}</p>
                           <p className="text-xs text-slate-500">{typeInfo.label}</p>
+                          {locationContact?.contact_email && (
+                            <p className="text-xs text-slate-500 mt-1 truncate">{locationContact.contact_email}</p>
+                          )}
                         </div>
                         <ChevronRight className="w-5 h-5 text-slate-300" />
                       </div>
@@ -252,6 +283,7 @@ export default function CampusPage() {
                 })}
               </div>
             </div>
+          </div>
           </div>
         ) : (
           /* Resources Tab */
@@ -344,6 +376,18 @@ export default function CampusPage() {
             
             {selectedLocation.description && (
               <p className="text-slate-600 mb-4">{selectedLocation.description}</p>
+            )}
+
+            {getLocationContact(selectedLocation)?.contact_email && (
+              <a
+                href={`mailto:${getLocationContact(selectedLocation).contact_email}`}
+                className="flex items-center gap-3 text-sm text-slate-700 bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 hover:bg-blue-100 transition-colors"
+              >
+                <Mail className="w-4 h-4 text-epsi-blue" />
+                <span>
+                  Contact: {getLocationContact(selectedLocation).contact_name || 'Service'} - {getLocationContact(selectedLocation).contact_email}
+                </span>
+              </a>
             )}
             
             <div className="flex items-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-lg p-3">

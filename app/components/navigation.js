@@ -42,14 +42,24 @@ export default function Navigation() {
   useEffect(() => {
     // Fetch notification count
     if (user) {
-      fetch(`/api/notifications?userId=${user.id}&unreadOnly=true`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.notifications) {
-            setNotificationCount(data.notifications.length);
-          }
-        })
-        .catch(() => {});
+      const refreshNotifications = () => {
+        fetch(`/api/notifications?userId=${user.id}&unreadOnly=true`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.notifications) {
+              setNotificationCount(data.notifications.length);
+            }
+          })
+          .catch(() => {});
+      };
+
+      refreshNotifications();
+
+      window.addEventListener('notifications-updated', refreshNotifications);
+
+      return () => {
+        window.removeEventListener('notifications-updated', refreshNotifications);
+      };
     }
   }, [user]);
 
