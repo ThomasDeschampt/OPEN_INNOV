@@ -32,24 +32,84 @@ export default function TestimonialsPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [likingId, setLikingId] = useState(null);
+  const [likedTestimonials, setLikedTestimonials] = useState({});
 
   const { user } = useAuth();
   const toast = useToast();
 
   useEffect(() => {
     fetchTestimonials();
-  }, []);
+  }, [user]);
 
   const fetchTestimonials = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/testimonials');
+      const params = new URLSearchParams();
+      if (user?.id) {
+        params.set('userId', user.id);
+      }
+
+      const response = await fetch(`/api/testimonials?${params.toString()}`);
       const data = await response.json();
       setTestimonials(data.testimonials || []);
+
+      if (user?.id) {
+        const likesMap = {};
+        for (const testimonial of data.testimonials || []) {
+          if (testimonial.liked_by_user) {
+            likesMap[testimonial.id] = true;
+          }
+        }
+        setLikedTestimonials(likesMap);
+      } else {
+        setLikedTestimonials({});
+      }
     } catch (error) {
       console.error('Error fetching testimonials:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLike = async (testimonialId) => {
+    if (!user) {
+      toast.info('Connectez-vous pour liker un témoignage');
+      return;
+    }
+
+    setLikingId(testimonialId);
+    try {
+      const response = await fetch(`/api/testimonials/${testimonialId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors du like');
+      }
+
+      setTestimonials(prev => prev.map(testimonial => {
+        if (testimonial.id === testimonialId) {
+          return {
+            ...testimonial,
+            likes: data.likes,
+          };
+        }
+        return testimonial;
+      }));
+
+      setLikedTestimonials(prev => ({
+        ...prev,
+        [testimonialId]: data.liked,
+      }));
+    } catch (error) {
+      toast.error(error.message || 'Erreur lors du like');
+    } finally {
+      setLikingId(null);
     }
   };
 
@@ -230,10 +290,19 @@ export default function TestimonialsPage() {
 
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-1 text-slate-500">
-                      <Heart className={`w-5 h-5 ${testimonial.likes > 0 ? 'text-red-500 fill-red-500' : ''}`} />
+                    <button
+                      type="button"
+                      onClick={() => handleLike(testimonial.id)}
+                      disabled={likingId === testimonial.id}
+                      className={`flex items-center gap-1 transition-colors ${
+                        likedTestimonials[testimonial.id]
+                          ? 'text-red-500'
+                          : 'text-slate-500 hover:text-red-500'
+                      } disabled:opacity-60`}
+                    >
+                      <Heart className={`w-5 h-5 ${likedTestimonials[testimonial.id] ? 'fill-red-500' : ''}`} />
                       <span className="text-sm font-medium">{testimonial.likes || 0}</span>
-                    </div>
+                    </button>
                     <div className="flex items-center gap-1 text-xs text-slate-400">
                       <Calendar className="w-4 h-4" />
                       {new Date(testimonial.created_at).toLocaleDateString('fr-FR', {

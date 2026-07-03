@@ -6,14 +6,23 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit')) || 50;
     const search = searchParams.get('search');
+    const userId = searchParams.get('userId');
 
     const db = getDb();
+    const likedByUserSelect = userId
+      ? `,
+        EXISTS(
+          SELECT 1
+          FROM testimonial_likes tl
+          WHERE tl.testimonial_id = t.id AND tl.user_id = ?
+        ) as liked_by_user`
+      : '';
     
     let query = `
       SELECT 
         t.*,
         u.first_name || ' ' || u.last_name as author_name,
-        u.user_type as author_type
+        u.user_type as author_type${likedByUserSelect}
       FROM testimonials t
       JOIN users u ON t.user_id = u.id
       WHERE 1=1
@@ -24,6 +33,10 @@ export async function GET(request) {
     if (search) {
       query += ' AND (t.title LIKE ? OR t.content LIKE ? OR t.company LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (userId) {
+      params.push(userId);
     }
 
     query += ' ORDER BY t.created_at DESC LIMIT ?';

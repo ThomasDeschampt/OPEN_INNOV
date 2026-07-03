@@ -60,6 +60,23 @@ export async function POST(request) {
       );
     }
 
+    const db = getDb();
+    const user = db.prepare('SELECT id, user_type FROM users WHERE id = ?').get(userId);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Utilisateur introuvable' },
+        { status: 404 }
+      );
+    }
+
+    if (user.user_type !== 'bde') {
+      return NextResponse.json(
+        { error: 'Accès réservé aux membres du BDE' },
+        { status: 403 }
+      );
+    }
+
     if (!title || !date) {
       return NextResponse.json(
         { error: 'Titre et date requis' },
@@ -67,12 +84,21 @@ export async function POST(request) {
       );
     }
 
-    const db = getDb();
+    const normalizedDate = `${date.replace('T', ' ')}:00`;
+    const normalizedEndDate = end_date ? `${end_date.replace('T', ' ')}:00` : null;
+    const parsedMaxParticipants = max_participants ? Number.parseInt(max_participants, 10) : null;
+
+    if (parsedMaxParticipants !== null && (!Number.isInteger(parsedMaxParticipants) || parsedMaxParticipants <= 0)) {
+      return NextResponse.json(
+        { error: 'Le nombre maximum de participants doit être positif' },
+        { status: 400 }
+      );
+    }
 
     const result = db.prepare(`
       INSERT INTO events (title, description, date, end_date, location, category, max_participants, created_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(title, description, date, end_date, location, category, max_participants, userId);
+    `).run(title.trim(), description?.trim() || null, normalizedDate, normalizedEndDate, location?.trim() || null, category || null, parsedMaxParticipants, user.id);
 
     const event = db.prepare('SELECT * FROM events WHERE id = ?').get(result.lastInsertRowid);
 

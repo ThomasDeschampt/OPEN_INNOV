@@ -10,6 +10,8 @@ import {
   Vote,
   TrendingUp,
   Calendar,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../components/AuthContext';
 import { useToast } from '../components/toast';
@@ -19,6 +21,13 @@ export default function PollsPage() {
   const [loading, setLoading] = useState(true);
   const [votingPollId, setVotingPollId] = useState(null);
   const [userVotes, setUserVotes] = useState({});
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creatingPoll, setCreatingPoll] = useState(false);
+  const [newPoll, setNewPoll] = useState({
+    question: '',
+    options: ['', ''],
+    expiresAt: '',
+  });
 
   const { user } = useAuth();
   const toast = useToast();
@@ -106,6 +115,84 @@ export default function PollsPage() {
     }
   };
 
+  const handleCreatePoll = async (event) => {
+    event.preventDefault();
+
+    if (!user || user.user_type !== 'bde') {
+      toast.error('Accès réservé aux membres du BDE');
+      return;
+    }
+
+    const options = newPoll.options.map(option => option.trim()).filter(Boolean);
+
+    if (!newPoll.question.trim()) {
+      toast.error('La question est requise');
+      return;
+    }
+
+    if (options.length < 2) {
+      toast.error('Ajoutez au moins deux options');
+      return;
+    }
+
+    setCreatingPoll(true);
+    try {
+      const response = await fetch('/api/polls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: newPoll.question,
+          options,
+          expiresAt: newPoll.expiresAt || null,
+          userId: user.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la création du sondage');
+      }
+
+      setPolls(prev => [data.poll, ...prev]);
+      setNewPoll({ question: '', options: ['', ''], expiresAt: '' });
+      setShowCreateForm(false);
+      toast.success('Sondage créé avec succès');
+    } catch (error) {
+      toast.error(error.message || 'Erreur lors de la création du sondage');
+    } finally {
+      setCreatingPoll(false);
+    }
+  };
+
+  const updateOption = (index, value) => {
+    setNewPoll(prev => {
+      const nextOptions = [...prev.options];
+      nextOptions[index] = value;
+      return { ...prev, options: nextOptions };
+    });
+  };
+
+  const addOption = () => {
+    setNewPoll(prev => ({
+      ...prev,
+      options: [...prev.options, ''],
+    }));
+  };
+
+  const removeOption = (index) => {
+    setNewPoll(prev => {
+      if (prev.options.length <= 2) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        options: prev.options.filter((_, optionIndex) => optionIndex !== index),
+      };
+    });
+  };
+
   const isExpired = (expiresAt) => {
     if (!expiresAt) return false;
     return new Date(expiresAt) < new Date();
@@ -138,6 +225,105 @@ export default function PollsPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
+        {user?.user_type === 'bde' && (
+          <div className="mb-8 bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-3xl p-6 shadow-xl">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-white/70 text-sm uppercase tracking-[0.2em]">Espace BDE</p>
+                <h2 className="text-2xl font-semibold mt-1">Créer un nouveau sondage</h2>
+                <p className="text-white/80 mt-2">Publiez rapidement un vote pour consulter les étudiants.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(prev => !prev)}
+                className="inline-flex items-center gap-2 rounded-full bg-white text-indigo-700 px-4 py-2 font-medium shadow-md hover:bg-white/90 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                {showCreateForm ? 'Fermer' : 'Nouveau sondage'}
+              </button>
+            </div>
+
+            {showCreateForm && (
+              <form onSubmit={handleCreatePoll} className="mt-6 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/20 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Question</label>
+                  <input
+                    type="text"
+                    value={newPoll.question}
+                    onChange={(e) => setNewPoll(prev => ({ ...prev, question: e.target.value }))}
+                    placeholder="Ex: Quelle date préférez-vous pour la prochaine soirée ?"
+                    className="w-full rounded-xl border border-white/20 bg-white/95 text-slate-900 px-4 py-3 outline-none focus:ring-2 focus:ring-white/60"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <label className="block text-sm font-medium">Options</label>
+                    <button
+                      type="button"
+                      onClick={addOption}
+                      className="text-sm font-medium text-white/90 hover:text-white underline underline-offset-4"
+                    >
+                      Ajouter une option
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {newPoll.options.map((option, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          className="flex-1 rounded-xl border border-white/20 bg-white/95 text-slate-900 px-4 py-3 outline-none focus:ring-2 focus:ring-white/60"
+                        />
+                        {newPoll.options.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => removeOption(index)}
+                            className="p-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+                            aria-label="Supprimer l'option"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Date d'expiration facultative</label>
+                  <input
+                    type="datetime-local"
+                    value={newPoll.expiresAt}
+                    onChange={(e) => setNewPoll(prev => ({ ...prev, expiresAt: e.target.value }))}
+                    className="rounded-xl border border-white/20 bg-white/95 text-slate-900 px-4 py-3 outline-none focus:ring-2 focus:ring-white/60"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="rounded-full px-4 py-2 font-medium bg-white/10 hover:bg-white/20 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingPoll}
+                    className="rounded-full px-5 py-2 font-semibold bg-white text-indigo-700 hover:bg-white/90 disabled:opacity-70 transition-colors"
+                  >
+                    {creatingPoll ? 'Création...' : 'Créer le sondage'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-12">
             <div className="spinner" />
