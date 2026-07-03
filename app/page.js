@@ -27,31 +27,31 @@ const BADGES = [
   {
     id: 'starter',
     title: 'Starter EPSI',
-    image: '/icon/image-removebg-preview.png',
+    image: '/icon/debuttant.png',
     minPoints: 10,
   },
   {
     id: 'explorer',
     title: 'Explorateur',
-    image: '/icon/image-removebg-preview%20(1).png',
+    image: '/icon/explorateur.png',
     minPoints: 35,
   },
   {
     id: 'community',
     title: 'Ambassadeur',
-    image: '/icon/image-removebg-preview%20(2).png',
+    image: '/icon/moyen.png',
     minPoints: 80,
   },
   {
     id: 'streak',
     title: 'Flamme continue',
-    image: '/icon/image-removebg-preview%20(3).png',
+    image: '/icon/avance.png',
     minStreak: 3,
   },
   {
     id: 'legend',
     title: 'Légende du campus',
-    image: '/icon/image-removebg-preview%20(4).png',
+    image: '/icon/expert.png',
     minPoints: 150,
   },
 ];
@@ -390,7 +390,7 @@ export default function HomePage() {
             
             <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 animate-slide-up">
               {user ? (
-                <>Salut {user.first_name} ! 👋</>
+                <>Salut {user.first_name} !</>
               ) : (
                 <>Votre aventure EPSI<br />commence ici</>
               )}
