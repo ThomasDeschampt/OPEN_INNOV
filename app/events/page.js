@@ -205,8 +205,6 @@ export default function EventsPage() {
                         className={`group bg-white rounded-2xl shadow-lg overflow-hidden card-hover animate-slide-up`}
                         style={{ animationDelay: `${index * 0.05}s` }}
                       >
-                        {/* Category Bar */}
-                        <div className={`h-2 ${categoryColors[event.category] || categoryColors.autre}`} />
                         
                         <div className="p-6">
                           {/* Date Badge */}

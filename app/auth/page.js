@@ -275,17 +275,17 @@ export default function AuthPage() {
             <div className="space-y-2 text-xs text-slate-600">
               <div className="flex justify-between">
                 <span>Étudiant :</span>
-                <code className="bg-white px-2 py-0.5 rounded">etudiant@epsi.fr</code>
+                <code className="bg-white px-2 py-0.5 rounded">demo.etudiant@epsi.fr</code>
               </div>
               <div className="flex justify-between">
                 <span>Ancien :</span>
-                <code className="bg-white px-2 py-0.5 rounded">ancien@epsi.fr</code>
+                <code className="bg-white px-2 py-0.5 rounded">demo.alumni@epsi.fr</code>
               </div>
               <div className="flex justify-between">
                 <span>BDE :</span>
-                <code className="bg-white px-2 py-0.5 rounded">bde@epsi.fr</code>
+                <code className="bg-white px-2 py-0.5 rounded">demo.bde@epsi.fr</code>
               </div>
-              <p className="text-slate-400 pt-1">Mot de passe : password123</p>
+              <p className="text-slate-400 pt-1">Mot de passe : Demo1234!</p>
             </div>
           </div>
         </div>

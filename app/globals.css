@@ -432,30 +432,6 @@ input[type="checkbox"] {
   box-shadow: var(--shadow-xl);
 }
 
-.event-card.soiree {
-  border-left-color: #a855f7;
-}
-
-.event-card.conference {
-  border-left-color: #3b82f6;
-}
-
-.event-card.sport {
-  border-left-color: #22c55e;
-}
-
-.event-card.culture {
-  border-left-color: #f97316;
-}
-
-.event-card.integration {
-  border-left-color: #ec4899;
-}
-
-.event-card.autre {
-  border-left-color: #64748b;
-}
-
 .dark .event-card {
   background: #1e293b;
 }
