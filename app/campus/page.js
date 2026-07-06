@@ -337,7 +337,6 @@ export default function CampusPage() {
               const Icon = t.icon;
               return (
                 <div key={resource.id} className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden card-hover">
-                  <div className={`h-1.5 ${t.color}`} />
                   <div className="p-6">
                     <div className="flex items-start gap-4 mb-4">
                       <div className={`w-12 h-12 rounded-xl ${t.color} flex items-center justify-center flex-shrink-0`}>

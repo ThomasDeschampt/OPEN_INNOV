@@ -434,7 +434,6 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--epsi-blue); }
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--epsi-blue);
   transition: all 0.18s ease;
 }
 .event-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-left-color: var(--epsi-accent); }
