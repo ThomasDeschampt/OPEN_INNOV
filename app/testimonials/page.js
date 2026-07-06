@@ -162,21 +162,24 @@ export default function TestimonialsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+      <div className="page-hero">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
+              <span className="eyebrow mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <span className="w-6 h-px bg-white/40" /> Alumni
+              </span>
               <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
                 Témoignages
               </h1>
-              <p className="text-white/80">
-                Découvrez les parcours inspirants des anciens EPSI
+              <p className="text-white/70">
+                Découvrez les parcours inspirants des anciens EPSI.
               </p>
             </div>
             {user?.user_type === 'alumni' && (
               <button
                 onClick={() => setShowNewModal(true)}
-                className="btn-accent inline-flex items-center gap-2 self-start bg-white text-orange-600 hover:bg-orange-50"
+                className="btn-accent inline-flex items-center gap-2 self-start bg-white text-epsi-blue hover:bg-blue-50"
               >
                 <Plus className="w-5 h-5" />
                 Partager mon témoignage
@@ -204,7 +207,7 @@ export default function TestimonialsPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
-            { icon: Users, value: testimonials.length, label: 'Témoignages', color: 'bg-orange-100 text-orange-600' },
+            { icon: Users, value: testimonials.length, label: 'Témoignages', color: 'bg-blue-100 text-epsi-blue' },
             { icon: Building, value: new Set(testimonials.map(t => t.company).filter(Boolean)).size, label: 'Entreprises', color: 'bg-blue-100 text-blue-600' },
             { icon: Heart, value: testimonials.reduce((sum, t) => sum + (t.likes || 0), 0), label: 'Likes', color: 'bg-red-100 text-red-600' },
             { icon: Award, value: testimonials.filter(t => t.graduation_year >= currentYear - 3).length, label: 'Récents (3 ans)', color: 'bg-emerald-100 text-emerald-600' },
@@ -213,7 +216,7 @@ export default function TestimonialsPage() {
               <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center mb-3`}>
                 <stat.icon className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-slate-900">{stat.value}</div>
+              <div className="text-2xl font-data font-semibold text-slate-900">{stat.value}</div>
               <div className="text-sm text-slate-500">{stat.label}</div>
             </div>
           ))}
@@ -247,11 +250,11 @@ export default function TestimonialsPage() {
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   {/* Quote Icon */}
-                  <Quote className="absolute top-4 right-4 w-8 h-8 text-orange-200" />
+                  <Quote className="absolute top-4 right-4 w-8 h-8 text-slate-200" />
 
                   {/* Author Info */}
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="avatar avatar-lg bg-gradient-to-br from-orange-400 to-amber-500 flex-shrink-0">
+                    <div className="avatar avatar-lg flex-shrink-0">
                       {testimonial.author_name?.split(' ').map(n => n[0]).join('') || 'A'}
                     </div>
                     <div>
@@ -281,7 +284,7 @@ export default function TestimonialsPage() {
                     {testimonial.content.length > 300 && (
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : testimonial.id)}
-                        className="text-orange-600 font-medium ml-1 hover:underline"
+                        className="text-epsi-blue font-medium ml-1 hover:underline"
                       >
                         {isExpanded ? 'Voir moins' : 'Lire la suite'}
                       </button>
@@ -320,7 +323,7 @@ export default function TestimonialsPage() {
 
         {/* CTA for alumni */}
         {user?.user_type !== 'alumni' && !loading && (
-          <div className="mt-12 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-8 text-white text-center">
+          <div className="mt-12 page-hero rounded-2xl p-8 text-center">
             <GraduationCap className="w-12 h-12 mx-auto mb-4 opacity-80" />
             <h3 className="text-2xl font-bold mb-2">Vous êtes ancien EPSI ?</h3>
             <p className="text-white/80 mb-6 max-w-lg mx-auto">
@@ -331,7 +334,7 @@ export default function TestimonialsPage() {
                 Seuls les anciens élèves peuvent publier des témoignages
               </p>
             ) : (
-              <a href="/auth" className="btn-secondary bg-white text-orange-600 hover:bg-orange-50 inline-block">
+              <a href="/auth" className="btn-secondary bg-white text-epsi-blue hover:bg-blue-50 inline-block">
                 Se connecter en tant qu'ancien
               </a>
             )}
@@ -457,7 +460,7 @@ export default function TestimonialsPage() {
       {user?.user_type === 'alumni' && (
         <button
           onClick={() => setShowNewModal(true)}
-          className="fab md:hidden bg-gradient-to-r from-orange-500 to-amber-500"
+          className="fab md:hidden"
         >
           <Plus className="w-6 h-6" />
         </button>

@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   Mail,
+  Gamepad2,
 } from 'lucide-react';
 
 export default function Navigation() {
@@ -72,6 +73,7 @@ export default function Navigation() {
 
   const navItems = [
     { href: '/', icon: Home, label: 'Accueil' },
+    { href: '/jeux', icon: Gamepad2, label: 'Jeux' },
     { href: '/events', icon: Calendar, label: 'Événements' },
     { href: '/campus', icon: MapPin, label: 'Campus' },
     { href: '/forum', icon: MessageSquare, label: 'Forum' },

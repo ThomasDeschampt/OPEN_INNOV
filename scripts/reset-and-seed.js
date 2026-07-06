@@ -109,6 +109,8 @@ function insert(table, data) {
 // 1. PURGE
 // =========================================================================
 const ALL_TABLES = [
+  'game_results',
+  'game_progress',
   'poll_votes',
   'poll_options',
   'polls',
@@ -245,12 +247,13 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     description TEXT,
-    type TEXT CHECK(type IN ('classroom', 'office', 'cafeteria', 'library', 'lab', 'meeting', 'other')),
+    type TEXT CHECK(type IN ('classroom', 'office', 'cafeteria', 'library', 'lab', 'meeting', 'other', 'reception', 'restaurant', 'amphitheater', 'coworking')),
     floor INTEGER,
     x_position REAL,
     y_position REAL,
     contact_name TEXT,
-    contact_email TEXT
+    contact_email TEXT,
+    hours TEXT
   );
 
   CREATE TABLE polls (
@@ -306,6 +309,29 @@ db.exec(`
     is_resolved INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE game_progress (
+    user_id INTEGER PRIMARY KEY,
+    streak INTEGER DEFAULT 0,
+    best_streak INTEGER DEFAULT 0,
+    points INTEGER DEFAULT 0,
+    games_played INTEGER DEFAULT 0,
+    last_played_date TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE game_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    game_key TEXT NOT NULL,
+    play_date TEXT NOT NULL,
+    won INTEGER DEFAULT 1,
+    score INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, game_key, play_date)
   );
 `);
 console.log('✅ Schéma recréé\n');
@@ -715,19 +741,29 @@ const seed = db.transaction(() => {
   // 3.6 CARTE DU CAMPUS
   // -----------------------------------------------------------------------
   console.log('📍 Création des emplacements du campus...');
-  // Coordonnées conservées à l'identique de scripts/seed-campus.js (calées
-  // sur le plan réel du 2ème étage) pour ne pas décaler les pastilles sur
-  // la carte.
+  // Deux niveaux : rez-de-chaussée (accueil, cafétéria, food-truck, espaces
+  // communs...) et 2ème étage (Mydil, bureaux, salles). Positions x/y (0..1)
+  // calées sur une grille 3x2 par étage pour le plan 3D.
   const CAMPUS_LOCATIONS = [
-    { name: 'Mydil', description: 'Espace Mydil - Innovation et projets étudiants', type: 'lab', floor: 2, x_position: 0.12, y_position: 0.38, contact_name: 'Référent Innovation', contact_email: 'mydil@epsi.fr' },
-    { name: 'Espace commun', description: 'Espace de travail collaboratif et détente', type: 'cafeteria', floor: 2, x_position: 0.42, y_position: 0.28, contact_name: null, contact_email: null },
-    { name: 'Administration', description: 'Services administratifs - Inscriptions, certificats', type: 'office', floor: 2, x_position: 0.82, y_position: 0.18, contact_name: 'Nadège', contact_email: 'nadege@epsi.fr' },
-    { name: 'Direction', description: "Bureau de la direction de l'école", type: 'office', floor: 2, x_position: 0.82, y_position: 0.35, contact_name: 'Direction', contact_email: 'direction@epsi.fr' },
-    { name: 'Pédagogie', description: 'Bureau pédagogique - Suivi des étudiants, stages', type: 'office', floor: 2, x_position: 0.82, y_position: 0.52, contact_name: 'Service pédagogie', contact_email: 'pedagogie@epsi.fr' },
-    { name: 'Espace commun', description: 'Espace de travail et détente', type: 'cafeteria', floor: 2, x_position: 0.42, y_position: 0.78, contact_name: null, contact_email: null },
+    // ---- Rez-de-chaussée (floor 0) ----
+    { name: 'Accueil', description: "Point d'accueil et d'information à l'entrée du campus : badges, orientation des visiteurs, objets trouvés.", type: 'reception', floor: 0, x_position: 0.18, y_position: 0.24, contact_name: 'Accueil EPSI', contact_email: 'accueil@epsi.fr', hours: '8h00 - 18h30' },
+    { name: 'Cafétéria', description: 'Espace de restauration : boissons chaudes, snacks et micro-ondes en libre accès pour le déjeuner.', type: 'cafeteria', floor: 0, x_position: 0.5, y_position: 0.24, contact_name: null, contact_email: null, hours: '8h00 - 18h00' },
+    { name: 'Food-truck', description: "Le food-truck partenaire s'installe sur le parvis chaque midi, avec une rotation de menus toutes les semaines.", type: 'restaurant', floor: 0, x_position: 0.82, y_position: 0.24, contact_name: null, contact_email: null, hours: '11h30 - 14h00 (lun-ven)' },
+    { name: 'Espace détente', description: 'Canapés, baby-foot et coin détente pour souffler entre deux cours.', type: 'coworking', floor: 0, x_position: 0.18, y_position: 0.72, contact_name: null, contact_email: null, hours: '7h30 - 20h00' },
+    { name: 'Amphithéâtre', description: 'Grand amphi pour les conférences, keynotes et grands événements du BDE.', type: 'amphitheater', floor: 0, x_position: 0.5, y_position: 0.72, contact_name: null, contact_email: null, hours: 'Selon planning' },
+    { name: 'Hall polyvalent', description: 'Espace modulable au rez-de-chaussée : forums entreprises, stands associatifs et expositions étudiantes.', type: 'other', floor: 0, x_position: 0.82, y_position: 0.72, contact_name: null, contact_email: null, hours: '8h00 - 20h00' },
+
+    // ---- 2ème étage (floor 2) ----
+    { name: 'Mydil', description: 'Espace Mydil — innovation, projets étudiants et prototypage (impression 3D, matériel à disposition).', type: 'lab', floor: 2, x_position: 0.18, y_position: 0.24, contact_name: 'Référent Innovation', contact_email: 'mydil@epsi.fr', hours: '9h00 - 18h00' },
+    { name: 'Salle B12', description: 'Salle de cours équipée (visio, double écran) — utilisée pour les ateliers CV & alternance.', type: 'classroom', floor: 2, x_position: 0.5, y_position: 0.24, contact_name: null, contact_email: null, hours: 'Selon planning' },
+    { name: 'Administration', description: 'Services administratifs : inscriptions, certificats, relevés de notes et relations entreprises.', type: 'office', floor: 2, x_position: 0.82, y_position: 0.2, contact_name: 'Nadège', contact_email: 'nadege@epsi.fr', hours: '9h00 - 17h00' },
+    { name: 'Espace coworking', description: 'Espace de travail silencieux pour les projets de groupe et la préparation des partiels.', type: 'coworking', floor: 2, x_position: 0.18, y_position: 0.72, contact_name: null, contact_email: null, hours: '7h30 - 20h00' },
+    { name: 'Espace détente 2e', description: "Coin café et détente de l'étage, à deux pas des salles de cours.", type: 'cafeteria', floor: 2, x_position: 0.5, y_position: 0.72, contact_name: null, contact_email: null, hours: '7h30 - 20h00' },
+    { name: 'Direction', description: "Bureau de la direction de l'école.", type: 'office', floor: 2, x_position: 0.82, y_position: 0.5, contact_name: 'Direction', contact_email: 'direction@epsi.fr', hours: 'Sur rendez-vous' },
+    { name: 'Pédagogie', description: 'Bureau pédagogique : suivi des étudiants, stages et alternance.', type: 'office', floor: 2, x_position: 0.82, y_position: 0.8, contact_name: 'Service pédagogie', contact_email: 'pedagogie@epsi.fr', hours: '9h00 - 17h00' },
   ];
   CAMPUS_LOCATIONS.forEach((loc) => insert('campus_locations', loc));
-  console.log(`✅ ${CAMPUS_LOCATIONS.length} emplacements créés\n`);
+  console.log(`✅ ${CAMPUS_LOCATIONS.length} emplacements créés (RDC + 2ème étage)\n`);
 
   // -----------------------------------------------------------------------
   // 3.7 SONDAGES
@@ -847,8 +883,81 @@ const seed = db.transaction(() => {
   });
   console.log(`✅ ${CONTACT_MESSAGES.length} messages de contact créés\n`);
 
+  // -----------------------------------------------------------------------
+  // 3.10 JEUX DU JOUR — progression + classement (streak)
+  // -----------------------------------------------------------------------
+  console.log('🎮 Création des scores de jeux...');
+
+  const dateKey = (offset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  const gTodayKey = dateKey(0);
+  const gYesterdayKey = dateKey(-1);
+
+  // Comptes démo : streak stoppé hier → ils peuvent jouer aujourd'hui et le prolonger.
+  const demoStreaks = new Map([
+    [demoStudent.id, 4],
+    [demoBde.id, 7],
+    [demoAlumni.id, 2],
+  ]);
+
+  let gameProgressCount = 0;
+  let gameResultCount = 0;
+  users.forEach((u) => {
+    const isDemo = demoStreaks.has(u.id);
+    let streak;
+    if (isDemo) {
+      streak = demoStreaks.get(u.id);
+    } else {
+      const r = rng();
+      streak = r > 0.85 ? randInt(9, 16) : r > 0.55 ? randInt(3, 8) : randInt(0, 2);
+    }
+    const bestStreak = streak + randInt(0, 6);
+    const gamesPlayed = streak > 0 ? streak * randInt(1, 2) + randInt(0, 4) : randInt(0, 3);
+    const points = streak * 22 + gamesPlayed * 6 + randInt(0, 40);
+    const lastPlayed = isDemo
+      ? gYesterdayKey
+      : streak > 0
+        ? gTodayKey
+        : gamesPlayed > 0
+          ? dateKey(-randInt(3, 20))
+          : null;
+
+    insert('game_progress', {
+      user_id: u.id,
+      streak,
+      best_streak: bestStreak,
+      points,
+      games_played: gamesPlayed,
+      last_played_date: lastPlayed,
+      updated_at: now(),
+    });
+    gameProgressCount += 1;
+
+    // Résultats du jour pour les joueurs actifs (réalisme du "déjà joué aujourd'hui").
+    if (!isDemo && lastPlayed === gTodayKey) {
+      for (const gameKey of ['logicode', 'sequence']) {
+        if (rng() > 0.35) {
+          insert('game_results', {
+            user_id: u.id,
+            game_key: gameKey,
+            play_date: gTodayKey,
+            won: 1,
+            score: randInt(10, 30),
+            created_at: now(),
+          });
+          gameResultCount += 1;
+        }
+      }
+    }
+  });
+  console.log(`✅ ${gameProgressCount} progressions de jeu, ${gameResultCount} résultats du jour\n`);
+
   return {
     users: users.length,
+    gameProgress: gameProgressCount,
     events: events.length,
     registrations: registrationCount,
     testimonials: alumni.length + 1,
@@ -880,6 +989,7 @@ console.log(`   - Emplacements du campus : ${summary.campusLocations}`);
 console.log(`   - Sondages               : ${summary.polls} (${summary.pollVotes} votes)`);
 console.log(`   - Notifications          : ${notifTotal}`);
 console.log(`   - Messages de contact    : ${summary.contactMessages}`);
+console.log(`   - Progressions de jeu    : ${summary.gameProgress}`);
 console.log('\n🔑 Connexion démo (mot de passe unique pour tous les comptes générés) :');
 console.log(`   - Étudiant : demo.etudiant@epsi.fr / ${DEMO_PASSWORD}`);
 console.log(`   - Alumni   : demo.alumni@epsi.fr / ${DEMO_PASSWORD}`);

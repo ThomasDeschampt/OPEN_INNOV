@@ -86,20 +86,15 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50">
-      <section className="relative overflow-hidden bg-gradient-to-br from-epsi-blue via-epsi-purple to-epsi-dark text-white">
-        <div className="absolute inset-0 opacity-15">
-          <div className="absolute top-16 left-16 w-72 h-72 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-epsi-accent blur-3xl" />
-        </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <section className="page-hero">
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-20">
           <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-10 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm mb-6">
+              <span className="eyebrow mb-5" style={{ color: 'rgba(255,255,255,0.7)' }}>
                 <MessageSquare className="w-4 h-4 text-epsi-accent" />
-                <span className="text-sm font-medium">Contact BDE</span>
-              </div>
+                Contact BDE
+              </span>
               <h1 className="text-4xl md:text-6xl font-display font-bold mb-6 leading-tight">
                 Un point d’entrée unique pour parler au BDE.
               </h1>

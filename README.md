@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# EPSI Connect
 
-## Getting Started
+Application d'intégration et de vie étudiante pour l'EPSI : découverte de l'école,
+communication du BDE, événements, forum, témoignages d'anciens, sondages, plan du
+campus et jeu du jour.
 
-First, run the development server:
+**Stack** : Next.js 16 (App Router, Turbopack) · React 19 · Tailwind CSS v4 ·
+SQLite via `better-sqlite3` · authentification `bcryptjs`.
+
+## Prérequis
+
+- Node.js 20+ (testé jusqu'à Node 25).
+- La base est un simple fichier SQLite (`database.sqlite`) versionné avec le projet —
+  aucun serveur de base de données à installer.
+
+## Installation
+
+```bash
+npm install --legacy-peer-deps
+```
+
+> `--legacy-peer-deps` est nécessaire : `lucide-react` déclare un peer-dependency
+> React ≤ 18 alors que le projet tourne sous React 19.
+
+## Lancer l'application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir http://localhost:3000.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Base de données & jeu de données de démo
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Le projet est livré avec un script unique qui **purge la base puis la remplit** avec un
+jeu de données réaliste, cohérent et **déterministe** (même résultat à chaque exécution,
+donc démo rejouable à l'identique).
 
-## Learn More
+```bash
+# Arrêter le serveur dev avant (verrou SQLite), puis :
+npm run db:reset
+```
 
-To learn more about Next.js, take a look at the following resources:
+`npm run db:seed` est un alias équivalent.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Le script alimente **toutes** les tables : utilisateurs, événements + inscriptions,
+témoignages (+ likes), forum (publications, commentaires, likes), ressources, plan du
+campus, sondages (+ votes), notifications et messages de contact.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Contenu généré (ordre de grandeur) : 28 utilisateurs, 12 événements, 8 témoignages,
+18 publications de forum, 5 sondages, etc.
 
-## Deploy on Vercel
+### Comptes de démonstration
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Tous les comptes générés partagent le même mot de passe : **`Demo1234!`**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Rôle     | Email                    |
+| -------- | ------------------------ |
+| Étudiant | `demo.etudiant@epsi.fr`  |
+| Alumni   | `demo.alumni@epsi.fr`    |
+| BDE      | `demo.bde@epsi.fr`       |
+
+Le compte **BDE** permet de créer des événements et des sondages.
+
+## Build de production
+
+```bash
+npm run build
+npm start
+```
+
+## Structure
+
+```
+app/            Pages (App Router) + routes API sous app/api/
+  components/   Navigation, contexte d'auth, toasts
+lib/db.js       Connexion SQLite + schéma (source de vérité du schéma)
+scripts/
+  reset-and-seed.js   Purge + jeu de données de démo (npm run db:reset)
+public/, app/icon/    Assets (badges, illustrations)
+```
+
+> Le schéma est défini dans `lib/db.js` **et** recopié dans `scripts/reset-and-seed.js` —
+> garder les deux synchronisés en cas d'évolution du schéma.

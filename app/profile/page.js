@@ -158,7 +158,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-epsi-blue to-epsi-purple text-white">
+      <div className="page-hero">
         <div className="max-w-5xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row items-center gap-6">
             {/* Avatar */}

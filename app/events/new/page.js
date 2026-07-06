@@ -136,15 +136,15 @@ export default function CreateEventPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-violet-50">
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="page-hero">
         <div className="max-w-5xl mx-auto px-4 py-12">
           <Link href="/events" className="inline-flex items-center gap-2 text-white/80 hover:text-white mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             Retour aux événements
           </Link>
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">Créer un événement</h1>
-          <p className="text-white/80">Publiez une nouvelle sortie, conférence ou activité pour la communauté.</p>
+          <p className="text-white/70">Publiez une nouvelle sortie, conférence ou activité pour la communauté.</p>
         </div>
       </div>
 
@@ -250,7 +250,7 @@ export default function CreateEventPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-3xl shadow-lg p-6 sticky top-24">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+                <div className="w-12 h-12 rounded-2xl bg-epsi-light text-epsi-blue flex items-center justify-center">
                   <Plus className="w-6 h-6" />
                 </div>
                 <div>

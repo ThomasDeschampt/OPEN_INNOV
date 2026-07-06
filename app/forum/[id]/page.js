@@ -178,7 +178,7 @@ export default function ForumPostPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+      <div className="page-hero">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link
             href="/forum"

@@ -96,15 +96,18 @@ export default function EventsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+      <div className="page-hero">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
+              <span className="eyebrow mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <span className="w-6 h-px bg-white/40" /> Agenda
+              </span>
               <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
                 Événements
               </h1>
-              <p className="text-white/80">
-                Soirées, conférences, sport... Ne manquez rien !
+              <p className="text-white/70">
+                Soirées, conférences, sport... Ne manquez rien.
               </p>
             </div>
             {user?.user_type === 'bde' && (

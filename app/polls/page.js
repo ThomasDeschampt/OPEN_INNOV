@@ -213,20 +213,24 @@ export default function PollsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white">
+      <div className="page-hero">
         <div className="max-w-7xl mx-auto px-4 py-12">
+          <span className="eyebrow mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+            <BarChart3 className="w-4 h-4 text-epsi-accent" />
+            Consultations
+          </span>
           <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
             Sondages
           </h1>
-          <p className="text-white/80">
-            Donnez votre avis et participez aux décisions du BDE !
+          <p className="text-white/70">
+            Donnez votre avis et participez aux décisions du BDE.
           </p>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {user?.user_type === 'bde' && (
-          <div className="mb-8 bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-3xl p-6 shadow-xl">
+          <div className="mb-8 bg-epsi-blue text-white rounded-3xl p-6 shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="text-white/70 text-sm uppercase tracking-[0.2em]">Espace BDE</p>
@@ -353,8 +357,8 @@ export default function PollsPage() {
                   <div className="p-6 border-b border-slate-100">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center flex-shrink-0">
-                          <Vote className="w-6 h-6 text-white" />
+                        <div className="w-12 h-12 rounded-xl bg-epsi-light text-epsi-blue flex items-center justify-center flex-shrink-0">
+                          <Vote className="w-6 h-6" />
                         </div>
                         <div>
                           <h2 className="text-lg font-semibold text-slate-900 mb-1">
@@ -398,39 +402,39 @@ export default function PollsPage() {
                           key={option.id}
                           onClick={() => !showResults && handleVote(poll.id, option.id)}
                           disabled={showResults || votingPollId === poll.id}
-                          className={`poll-option w-full text-left ${
-                            isSelected ? 'selected border-indigo-500 bg-indigo-50' : ''
-                          } ${showResults ? 'cursor-default' : 'cursor-pointer'}`}
+                          className={`poll-option text-left ${isSelected ? 'selected' : ''} ${
+                            showResults ? 'cursor-default' : 'cursor-pointer'
+                          }`}
                         >
-                          {/* Progress Bar Background */}
+                          {/* Result progress fill (sits behind content) */}
                           {showResults && (
                             <div
-                              className="poll-bar bg-indigo-100"
+                              className="poll-bar"
                               style={{ transform: `scaleX(${percentage / 100})` }}
                             />
                           )}
-                          
-                          <div className="relative flex items-center justify-between">
-                            <div className="flex items-center gap-3">
+
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
                               {showResults ? (
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                                  isSelected ? 'bg-indigo-500' : 'bg-slate-200'
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                  isSelected ? 'bg-epsi-blue' : 'bg-slate-200'
                                 }`}>
-                                  {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
+                                  {isSelected && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                                 </div>
                               ) : (
-                                <div className="w-5 h-5 rounded-full border-2 border-slate-300" />
+                                <div className="w-5 h-5 rounded-full border-2 border-slate-300 flex-shrink-0" />
                               )}
-                              <span className={`font-medium ${isSelected ? 'text-indigo-700' : 'text-slate-700'}`}>
+                              <span className={`font-medium truncate ${isSelected ? 'text-epsi-blue' : 'text-slate-800'}`}>
                                 {option.option_text}
                               </span>
                             </div>
-                            
+
                             {showResults && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-500">{option.votes} votes</span>
-                                <span className={`font-semibold ${
-                                  isSelected ? 'text-indigo-600' : 'text-slate-700'
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <span className="text-sm text-slate-500 font-data">{option.votes}</span>
+                                <span className={`font-data font-semibold tabular ${
+                                  isSelected ? 'text-epsi-blue' : 'text-slate-700'
                                 }`}>
                                   {percentage}%
                                 </span>

@@ -121,21 +121,24 @@ export default function ForumPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+      <div className="page-hero">
         <div className="max-w-7xl mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
+              <span className="eyebrow mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <span className="w-6 h-px bg-white/40" /> Communauté
+              </span>
               <h1 className="text-3xl md:text-4xl font-display font-bold mb-2">
                 Forum
               </h1>
-              <p className="text-white/80">
-                Échangez, partagez, entraidez-vous !
+              <p className="text-white/70">
+                Échangez, partagez, entraidez-vous.
               </p>
             </div>
             {user && (
               <button
                 onClick={() => setShowNewPostModal(true)}
-                className="btn-accent inline-flex items-center gap-2 self-start bg-white text-emerald-600 hover:bg-emerald-50"
+                className="btn-accent inline-flex items-center gap-2 self-start bg-white text-epsi-blue hover:bg-blue-50"
               >
                 <Plus className="w-5 h-5" />
                 Nouveau post
@@ -169,7 +172,7 @@ export default function ForumPage() {
                   onClick={() => setCategory(value)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                     category === value
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-epsi-blue text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
@@ -230,7 +233,7 @@ export default function ForumPage() {
                       <span className="text-xs text-slate-500">{formatDate(post.created_at)}</span>
                     </div>
 
-                    <h3 className="font-semibold text-lg text-slate-900 mb-2 line-clamp-1 group-hover:text-emerald-600">
+                    <h3 className="font-semibold text-lg text-slate-900 mb-2 line-clamp-1 group-hover:text-epsi-blue">
                       {post.title}
                     </h3>
 
